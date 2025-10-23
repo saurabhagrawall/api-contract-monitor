@@ -182,7 +182,7 @@ This project demonstrates proficiency in:
 **Saurabh Agrawal**
 - GitHub: [@saurabhagrawall](https://github.com/saurabhagrawall)
 - University: UMASS Amherst (MSCS)
-- LinkedIn: linkedinhttps://www.linkedin.com/in/saurabh-agrawal-0839ab206/
+- LinkedIn: https://www.linkedin.com/in/saurabh-agrawal-0839ab206/
 - University Email: saurabhagraw@umass.edu
 - Personal Email: agrawalsaurabh2000@gmail.com
 
