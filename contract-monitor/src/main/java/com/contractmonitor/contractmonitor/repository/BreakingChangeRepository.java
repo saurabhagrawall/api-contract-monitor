@@ -13,7 +13,9 @@ public interface BreakingChangeRepository extends JpaRepository<BreakingChange, 
     
     List<BreakingChange> findByServiceNameOrderByDetectedAtDesc(String serviceName);
     
-    List<BreakingChange> findByChangeType(String changeType);
+    List<BreakingChange> findByChangeType(BreakingChange.ChangeType changeType);
+
+    List<BreakingChange> findByServiceNameAndChangeType(String serviceName, BreakingChange.ChangeType changeType);
     
     Long countByServiceName(String serviceName);
 }

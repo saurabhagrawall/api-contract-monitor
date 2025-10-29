@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -116,5 +117,21 @@ public class ApiSpecService {
      */
     public long getTotalSpecCount() {
         return apiSpecRepository.count();
+    }
+
+    public List<ApiSpec> getAllLatestSpecs() {
+        log.info("Fetching all latest specs for all services");
+
+        // Get distinct service names
+        List<String> serviceNames = apiSpecRepository.findDistinctServiceNames();
+
+        List<ApiSpec> latestSpecs = new ArrayList<>();
+        for (String serviceName : serviceNames) {
+            apiSpecRepository.findTopByServiceNameOrderByFetchedAtDesc(serviceName)
+                    .ifPresent(latestSpecs::add);
+        }
+
+        log.info("Found latest specs for {} services", latestSpecs.size());
+        return latestSpecs;
     }
 }

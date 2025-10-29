@@ -48,8 +48,15 @@ public class BreakingChangeService {
     /**
      * Get breaking changes by type
      */
-    public List<BreakingChange> getByType(String changeType) {
+    public List<BreakingChange> getByType(BreakingChange.ChangeType changeType) {
         return breakingChangeRepository.findByChangeType(changeType);
+    }
+
+    /**
+     * Get breaking changes by service and type
+     */
+    public List<BreakingChange> getBreakingChangesByType(String serviceName, BreakingChange.ChangeType changeType) {
+        return breakingChangeRepository.findByServiceNameAndChangeType(serviceName, changeType);
     }
     
     /**
@@ -74,9 +81,8 @@ public class BreakingChangeService {
         
         return changes.stream()
                 .collect(Collectors.groupingBy(
-                        BreakingChange::getChangeType,
-                        Collectors.counting()
-                ));
+                        change -> change.getChangeType().toString(), // Convert enum to String
+                        Collectors.counting()));
     }
     
     /**
@@ -115,9 +121,8 @@ public class BreakingChangeService {
         
         Map<String, Long> byType = breakingChangeRepository.findAll().stream()
                 .collect(Collectors.groupingBy(
-                        BreakingChange::getChangeType,
-                        Collectors.counting()
-                ));
+                        change -> change.getChangeType().toString(), // Convert enum to String
+                        Collectors.counting()));
         
         return Map.of(
                 "totalBreakingChanges", total,

@@ -2,6 +2,7 @@ package com.contractmonitor.contractmonitor.repository;
 
 import com.contractmonitor.contractmonitor.entity.ApiSpec;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,4 +18,7 @@ public interface ApiSpecRepository extends JpaRepository<ApiSpec, Long> {
     Optional<ApiSpec> findByServiceNameAndVersion(String serviceName, String version);
     
     Optional<ApiSpec> findTopByServiceNameOrderByFetchedAtDesc(String serviceName);
+
+    @Query("SELECT DISTINCT a.serviceName FROM ApiSpec a")
+    List<String> findDistinctServiceNames();
 }
