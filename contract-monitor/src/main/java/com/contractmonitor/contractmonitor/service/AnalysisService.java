@@ -24,6 +24,7 @@ public class AnalysisService {
     private final ApiSpecService apiSpecService;
     private final BreakingChangeService breakingChangeService;
     private final AnalysisReportRepository analysisReportRepository;
+    private final AiService aiService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     
     /**
@@ -48,9 +49,43 @@ public class AnalysisService {
         
         // Compare specs and detect breaking changes
         List<BreakingChange> breakingChanges = compareSpecs(oldSpec, newSpec);
-        
-        // Save breaking changes
+
+        // Generate AI insights for each breaking change
         if (!breakingChanges.isEmpty()) {
+            log.info("Generating AI insights for {} breaking changes", breakingChanges.size());
+
+            // Get all latest specs for impact prediction
+            List<ApiSpec> allSpecs = apiSpecService.getAllLatestSpecs();
+
+            for (BreakingChange change : breakingChanges) {
+                try {
+                    log.info("Generating AI insights for: {}", change.getDescription());
+
+                    // Generate backward-compatible suggestion
+                    String suggestion = aiService.generateSuggestion(change);
+                    change.setAiSuggestion(suggestion);
+
+                    // Predict impact on other services
+                    String impact = aiService.predictImpact(change, allSpecs);
+                    change.setPredictedImpact(impact);
+
+                    // Generate plain English explanation
+                    String explanation = aiService.explainInPlainEnglish(change);
+                    change.setPlainEnglishExplanation(explanation);
+
+                    log.info("AI insights generated successfully for change ID: {}", change.getId());
+
+                } catch (Exception e) {
+                    log.error("Failed to generate AI insights for change: {}. Error: {}",
+                            change.getDescription(), e.getMessage());
+                    // Continue with other changes even if AI fails for one
+                    change.setAiSuggestion("AI analysis unavailable: " + e.getMessage());
+                    change.setPredictedImpact("AI analysis unavailable: " + e.getMessage());
+                    change.setPlainEnglishExplanation("AI analysis unavailable: " + e.getMessage());
+                }
+            }
+
+            // Save breaking changes (now with AI insights)
             breakingChangeService.saveAll(breakingChanges);
         }
         
@@ -110,7 +145,7 @@ public class AnalysisService {
                 // Endpoint was removed - BREAKING CHANGE
                 BreakingChange change = new BreakingChange();
                 change.setServiceName(oldSpec.getServiceName());
-                change.setChangeType("ENDPOINT_REMOVED");
+                change.setChangeType(BreakingChange.ChangeType.ENDPOINT_REMOVED);
                 change.setPath(path);
                 change.setDescription("Endpoint '" + path + "' was removed");
                 change.setOldVersion(oldSpec.getVersion());
@@ -143,7 +178,7 @@ public class AnalysisService {
                 // HTTP method was removed - BREAKING CHANGE
                 BreakingChange change = new BreakingChange();
                 change.setServiceName(oldSpec.getServiceName());
-                change.setChangeType("METHOD_REMOVED");
+                change.setChangeType(BreakingChange.ChangeType.METHOD_REMOVED);
                 change.setPath(path);
                 change.setDescription("HTTP method '" + method.toUpperCase() + "' removed from '" + path + "'");
                 change.setOldVersion(oldSpec.getVersion());
@@ -180,7 +215,7 @@ public class AnalysisService {
                 // Schema was removed - BREAKING CHANGE
                 BreakingChange change = new BreakingChange();
                 change.setServiceName(oldSpec.getServiceName());
-                change.setChangeType("SCHEMA_REMOVED");
+                change.setChangeType(BreakingChange.ChangeType.SCHEMA_REMOVED);
                 change.setPath("/components/schemas/" + schemaName);
                 change.setDescription("Schema '" + schemaName + "' was removed");
                 change.setOldVersion(oldSpec.getVersion());
@@ -226,7 +261,7 @@ public class AnalysisService {
                 // Property was removed - BREAKING CHANGE
                 BreakingChange change = new BreakingChange();
                 change.setServiceName(oldSpec.getServiceName());
-                change.setChangeType("FIELD_REMOVED");
+                change.setChangeType(BreakingChange.ChangeType.FIELD_REMOVED);
                 change.setPath("/components/schemas/" + schemaName);
                 change.setDescription("Field '" + propertyName + "' removed from '" + schemaName + "' schema");
                 change.setOldVersion(oldSpec.getVersion());
@@ -246,7 +281,7 @@ public class AnalysisService {
                     // Type changed - BREAKING CHANGE
                     BreakingChange change = new BreakingChange();
                     change.setServiceName(oldSpec.getServiceName());
-                    change.setChangeType("TYPE_CHANGED");
+                    change.setChangeType(BreakingChange.ChangeType.TYPE_CHANGED);
                     change.setPath("/components/schemas/" + schemaName);
                     change.setDescription("Field '" + propertyName + "' type changed from '" + 
                                         oldType + "' to '" + newType + "' in '" + schemaName + "' schema");
