@@ -34,17 +34,12 @@ public class BreakingChangeController {
      * GET /api/breaking-changes/{serviceName}/type/{changeType}
      */
     @GetMapping("/{serviceName}/type/{changeType}")
-    public ResponseEntity<List<BreakingChange>> getBreakingChangesByType(
-            @PathVariable String serviceName,
-            @PathVariable String changeType) {
+        public ResponseEntity<List<BreakingChange>> getBreakingChangesByType(
+        @PathVariable String serviceName,
+        @PathVariable BreakingChange.ChangeType changeType) {
         log.info("Fetching {} changes for: {}", changeType, serviceName);
-        
-        List<BreakingChange> allChanges = breakingChangeService.getByServiceName(serviceName);
-        List<BreakingChange> filteredChanges = allChanges.stream()
-                .filter(change -> change.getChangeType().equalsIgnoreCase(changeType))
-                .toList();
-        
-        return ResponseEntity.ok(filteredChanges);
+        List<BreakingChange> changes = breakingChangeService.getBreakingChangesByType(serviceName, changeType);
+        return ResponseEntity.ok(changes);
     }
     
     /**
