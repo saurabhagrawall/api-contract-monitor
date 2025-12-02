@@ -129,4 +129,86 @@ public class BreakingChangeService {
                 "breakingChangesByType", byType
         );
     }
+
+    /**
+     * Update the status of a breaking change
+     */
+    public BreakingChange updateStatus(Long changeId, BreakingChange.Status newStatus, String resolvedBy, String notes) {
+        log.info("Updating status of breaking change {} to {}", changeId, newStatus);
+        
+        BreakingChange change = breakingChangeRepository.findById(changeId)
+                .orElseThrow(() -> new RuntimeException("Breaking change not found with ID: " + changeId));
+        
+        change.setStatus(newStatus);
+        
+        if (newStatus == BreakingChange.Status.RESOLVED) {
+            change.setResolvedAt(java.time.LocalDateTime.now());
+            change.setResolvedBy(resolvedBy);
+        }
+        
+        if (notes != null && !notes.isEmpty()) {
+            change.setResolutionNotes(notes);
+        }
+        
+        BreakingChange saved = breakingChangeRepository.save(change);
+        log.info("Updated status of breaking change {} to {}", changeId, newStatus);
+        
+        return saved;
+    }
+    
+    /**
+     * Get breaking changes by status
+     */
+    public List<BreakingChange> getByStatus(BreakingChange.Status status) {
+        return breakingChangeRepository.findByStatus(status);
+    }
+    
+    /**
+     * Get breaking changes by service and status
+     */
+    public List<BreakingChange> getByServiceNameAndStatus(String serviceName, BreakingChange.Status status) {
+        return breakingChangeRepository.findByServiceNameAndStatusOrderByDetectedAtDesc(serviceName, status);
+    }
+    
+    /**
+     * Get active breaking changes for a service
+     */
+    public List<BreakingChange> getActiveChanges(String serviceName) {
+        return getByServiceNameAndStatus(serviceName, BreakingChange.Status.ACTIVE);
+    }
+    
+    /**
+     * Get count of active breaking changes
+     */
+    public Long countActive() {
+        return breakingChangeRepository.countActiveBreakingChanges();
+    }
+    
+    /**
+     * Get count of breaking changes by status for a service
+     */
+    public Long countByServiceNameAndStatus(String serviceName, BreakingChange.Status status) {
+        return breakingChangeRepository.countByServiceNameAndStatus(serviceName, status);
+    }
+    
+    /**
+     * Mark breaking change as acknowledged
+     */
+    public BreakingChange acknowledge(Long changeId, String acknowledgedBy) {
+        return updateStatus(changeId, BreakingChange.Status.ACKNOWLEDGED, acknowledgedBy, "Acknowledged by team");
+    }
+    
+    /**
+     * Mark breaking change as resolved
+     */
+    public BreakingChange resolve(Long changeId, String resolvedBy, String notes) {
+        return updateStatus(changeId, BreakingChange.Status.RESOLVED, resolvedBy, notes);
+    }
+    
+    /**
+     * Mark breaking change as ignored
+     */
+    public BreakingChange ignore(Long changeId, String ignoredBy, String reason) {
+        return updateStatus(changeId, BreakingChange.Status.IGNORED, ignoredBy, reason);
+    }
 }

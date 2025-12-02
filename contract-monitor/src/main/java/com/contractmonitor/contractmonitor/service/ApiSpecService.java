@@ -134,4 +134,81 @@ public class ApiSpecService {
         log.info("Found latest specs for {} services", latestSpecs.size());
         return latestSpecs;
     }
+
+    /**
+     * Get the baseline spec for a service
+     */
+    public Optional<ApiSpec> getBaselineSpec(String serviceName) {
+        log.info("Fetching baseline spec for {}", serviceName);
+        return apiSpecRepository.findByServiceNameAndIsBaselineTrue(serviceName);
+    }
+    
+    /**
+     * Set a specific spec as the baseline
+     */
+    public ApiSpec setBaseline(String serviceName, Long specId) {
+        log.info("Setting baseline for {} to spec ID {}", serviceName, specId);
+        
+        // Get the spec to be marked as baseline
+        ApiSpec spec = apiSpecRepository.findById(specId)
+                .orElseThrow(() -> new RuntimeException("Spec not found with ID: " + specId));
+        
+        // Verify it belongs to the correct service
+        if (!spec.getServiceName().equals(serviceName)) {
+            throw new RuntimeException("Spec ID " + specId + " does not belong to service " + serviceName);
+        }
+        
+        // Clear any existing baseline for this service
+        apiSpecRepository.clearBaseline(serviceName);
+        
+        // Set new baseline
+        spec.setIsBaseline(true);
+        spec.setBaselineSetAt(LocalDateTime.now());
+        
+        ApiSpec saved = apiSpecRepository.save(spec);
+        log.info("Successfully set baseline for {} at version {}", serviceName, spec.getVersion());
+        
+        return saved;
+    }
+    
+    /**
+     * Set the latest spec as baseline
+     */
+    public ApiSpec setLatestAsBaseline(String serviceName) {
+        log.info("Setting latest spec as baseline for {}", serviceName);
+        
+        ApiSpec latestSpec = getLatestSpec(serviceName)
+                .orElseThrow(() -> new RuntimeException("No specs found for service: " + serviceName));
+        
+        return setBaseline(serviceName, latestSpec.getId());
+    }
+    
+    /**
+     * Clear baseline for a service
+     */
+    public void clearBaseline(String serviceName) {
+        log.info("Clearing baseline for {}", serviceName);
+        apiSpecRepository.clearBaseline(serviceName);
+    }
+    
+    /**
+     * Get the spec to compare against (baseline or previous)
+     */
+    public Optional<ApiSpec> getComparisonSpec(String serviceName) {
+        // Try to get baseline first
+        Optional<ApiSpec> baseline = getBaselineSpec(serviceName);
+        if (baseline.isPresent()) {
+            log.info("Using baseline spec for comparison for {}", serviceName);
+            return baseline;
+        }
+        
+        // Fall back to previous spec
+        log.info("No baseline found, using previous spec for comparison for {}", serviceName);
+        List<ApiSpec> lastTwo = getLastTwoSpecs(serviceName);
+        if (lastTwo.size() >= 2) {
+            return Optional.of(lastTwo.get(1)); // Second newest
+        }
+        
+        return Optional.empty();
+    }
 }

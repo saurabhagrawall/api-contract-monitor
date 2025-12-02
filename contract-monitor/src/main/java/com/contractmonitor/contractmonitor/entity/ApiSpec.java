@@ -30,8 +30,24 @@ public class ApiSpec {
     @Column(name = "fetched_at", nullable = false)
     private LocalDateTime fetchedAt;
     
+    // NEW: Baseline management fields
+    @Column(name = "is_baseline", nullable = false)
+    private Boolean isBaseline = false;
+    
+    @Column(name = "environment", length = 50)
+    private String environment = "development";
+    
+    @Column(name = "baseline_set_at")
+    private LocalDateTime baselineSetAt;
+    
     @PrePersist
     protected void onCreate() {
         fetchedAt = LocalDateTime.now();
+        if (isBaseline == null) {
+            isBaseline = false;
+        }
+        if (environment == null) {
+            environment = "development";
+        }
     }
 }
