@@ -15,6 +15,7 @@ const Overview = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [expandedInsights, setExpandedInsights] = useState({});
 
     const services = ['user-service', 'order-service', 'product-service', 'notification-service'];
 
@@ -26,13 +27,9 @@ const Overview = () => {
         try {
             setLoading(true);
 
-            // Fetch statistics
             const statsResponse = await breakingChangesApi.getStatistics();
-
-            // Fetch all services status
             const statusResponse = await analysisApi.getAllStatus();
 
-            // Fetch recent changes from all services
             const recentChangesPromises = services.map(service =>
                 breakingChangesApi.getRecent(service, 5).catch(() => ({ data: [] }))
             );
@@ -58,7 +55,6 @@ const Overview = () => {
         }
     };
 
-    // NEW: Status update handlers
     const handleAcknowledge = async (changeId, serviceName) => {
         if (!window.confirm('Mark this breaking change as acknowledged?')) {
             return;
@@ -67,7 +63,7 @@ const Overview = () => {
         try {
             await statusApi.acknowledge(changeId, 'saurabh@umass.edu');
             alert('✅ Breaking change acknowledged!');
-            fetchOverviewData(); // Refresh the list
+            fetchOverviewData();
         } catch (error) {
             console.error('Error acknowledging:', error);
             alert('❌ Error: ' + error.message);
@@ -76,7 +72,7 @@ const Overview = () => {
 
     const handleResolve = async (changeId, serviceName) => {
         const notes = window.prompt('Enter resolution notes (optional):');
-        if (notes === null) return; // User clicked cancel
+        if (notes === null) return;
 
         try {
             await statusApi.resolve(changeId, 'saurabh@umass.edu', notes || 'Resolved');
@@ -90,7 +86,7 @@ const Overview = () => {
 
     const handleIgnore = async (changeId, serviceName) => {
         const reason = window.prompt('Why ignore this change?');
-        if (reason === null) return; // User clicked cancel
+        if (reason === null) return;
 
         try {
             await statusApi.ignore(changeId, 'saurabh@umass.edu', reason || 'Marked as intentional');
@@ -100,6 +96,13 @@ const Overview = () => {
             console.error('Error ignoring:', error);
             alert('❌ Error: ' + error.message);
         }
+    };
+
+    const toggleInsights = (changeId) => {
+        setExpandedInsights(prev => ({
+            ...prev,
+            [changeId]: !prev[changeId]
+        }));
     };
 
     const filteredChanges = React.useMemo(() => {
@@ -137,7 +140,6 @@ const Overview = () => {
                 <p className="subtitle">Real-time monitoring of API contract changes</p>
             </div>
 
-            {/* Stats Cards */}
             <div className="stats-grid">
                 <div className="stat-card">
                     <div className="stat-icon breaking">
@@ -180,13 +182,11 @@ const Overview = () => {
                 </div>
             </div>
 
-            {/* Service Status Section - NEW! */}
             <ServiceStatus
                 services={stats.servicesStatus}
                 onAnalysisComplete={fetchOverviewData}
             />
 
-            {/* Recent Changes Feed */}
             <div className="section">
                 <div className="section-header-with-filter">
                     <h2>Recent Breaking Changes</h2>
@@ -234,12 +234,128 @@ const Overview = () => {
                                     <p className="change-path">Path: {change.path}</p>
                                 </div>
                                 {change.aiSuggestion && (
-                                    <div className="ai-badge">
-                                        <span>✨ AI Insights Available</span>
+                                    <div className="ai-insights-section">
+                                        <button
+                                            className="ai-insights-toggle"
+                                            onClick={() => toggleInsights(change.id)}
+                                        >
+                                            <span className="ai-badge-inline">
+                                                ✨ AI Insights Available
+                                            </span>
+                                            <span className="toggle-icon">
+                                                {expandedInsights[change.id] ? '▼' : '▶'}
+                                            </span>
+                                        </button>
+
+                                        {expandedInsights[change.id] && (
+                                            <div className="ai-insights-content">
+                                                {/* Migration Suggestion */}
+                                                {change.aiSuggestion && (
+                                                    <div className="insight-block">
+                                                        <h4>🔧 Migration Strategy</h4>
+                                                        <div className="insight-text">
+                                                            {change.aiSuggestion.split('\n').map((line, i) => {
+                                                                const trimmed = line.trim();
+                                                                if (!trimmed) return null;
+
+                                                                // Main numbered headers (1. **Text**)
+                                                                const mainHeaderMatch = trimmed.match(/^(\d+)\.\s*\*\*(.*?)\*\*$/);
+                                                                if (mainHeaderMatch) {
+                                                                    return <p key={i} className="insight-main-header">{mainHeaderMatch[1]}. {mainHeaderMatch[2]}</p>;
+                                                                }
+
+                                                                // Section headers (### text or ⚠️ text)
+                                                                if (trimmed.startsWith('###') || trimmed.startsWith('⚠️') || trimmed.startsWith('💡')) {
+                                                                    return <p key={i} className="insight-section-header">{trimmed.replace(/^###\s*/, '').replace(/\*\*/g, '')}</p>;
+                                                                }
+
+                                                                // Sub-bullets (- - **Label:** text)
+                                                                const subBulletMatch = trimmed.match(/^-\s*-\s*\*\*(.*?)\*\*\s*(.*)$/);
+                                                                if (subBulletMatch) {
+                                                                    return (
+                                                                        <p key={i} className="insight-sub-bullet">
+                                                                            <span className="insight-label">{subBulletMatch[1]}</span> {subBulletMatch[2]}
+                                                                        </p>
+                                                                    );
+                                                                }
+
+                                                                // Regular bullets (- text)
+                                                                if (trimmed.startsWith('-')) {
+                                                                    return <p key={i} className="insight-bullet">{trimmed.substring(1).trim().replace(/\*\*/g, '')}</p>;
+                                                                }
+
+                                                                // Regular text (remove any remaining **)
+                                                                return <p key={i} className="insight-regular">{trimmed.replace(/\*\*/g, '')}</p>;
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Impact Prediction */}
+                                                {change.predictedImpact && (
+                                                    <div className="insight-block">
+                                                        <h4>⚠️ Cross-Service Impact</h4>
+                                                        <div className="insight-text">
+                                                            {change.predictedImpact.split('\n').map((line, i) => {
+                                                                const trimmed = line.trim();
+                                                                if (!trimmed) return null;
+
+                                                                // Service impact lines (1. service | 80% | description)
+                                                                const impactMatch = trimmed.match(/^(\d+)\.\s*([^|]+)\s*\|\s*(\d+%)\s*\|\s*(.+)$/);
+                                                                if (impactMatch) {
+                                                                    return (
+                                                                        <p key={i} className="impact-service">
+                                                                            <span className="impact-number">{impactMatch[1]}.</span>
+                                                                            <span className="impact-name">{impactMatch[2].trim()}</span>
+                                                                            <span className="impact-confidence">{impactMatch[3]}</span>
+                                                                            <span className="impact-description">{impactMatch[4]}</span>
+                                                                        </p>
+                                                                    );
+                                                                }
+
+                                                                // Section headers
+                                                                if (trimmed.startsWith('###') || trimmed.startsWith('⚠️') || trimmed.startsWith('💡')) {
+                                                                    return <p key={i} className="insight-section-header">{trimmed.replace(/^###\s*/, '').replace(/\*\*/g, '')}</p>;
+                                                                }
+
+                                                                // Regular text
+                                                                return <p key={i} className="insight-regular">{trimmed.replace(/\*\*/g, '')}</p>;
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Plain English Explanation */}
+                                                {change.plainEnglishExplanation && (
+                                                    <div className="insight-block">
+                                                        <h4>💡 Business Impact</h4>
+                                                        <div className="insight-text">
+                                                            {change.plainEnglishExplanation.split('\n').map((line, i) => {
+                                                                const trimmed = line.trim();
+                                                                if (!trimmed) return null;
+
+                                                                // Numbered points (1. text)
+                                                                const numberedMatch = trimmed.match(/^(\d+)\.\s*(.+)$/);
+                                                                if (numberedMatch) {
+                                                                    return <p key={i} className="business-point">{numberedMatch[1]}. {numberedMatch[2].replace(/\*\*/g, '')}</p>;
+                                                                }
+
+                                                                // Section headers
+                                                                if (trimmed.startsWith('###') || trimmed.startsWith('⚠️') || trimmed.startsWith('💡')) {
+                                                                    return <p key={i} className="insight-section-header">{trimmed.replace(/^###\s*/, '').replace(/\*\*/g, '')}</p>;
+                                                                }
+
+                                                                // Regular text
+                                                                return <p key={i} className="insight-regular">{trimmed.replace(/\*\*/g, '')}</p>;
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
-                                {/* NEW: Action buttons */}
                                 {change.status === 'ACTIVE' && (
                                     <div className="change-actions">
                                         <button
@@ -263,7 +379,6 @@ const Overview = () => {
                                     </div>
                                 )}
 
-                                {/* Show resolution info if resolved */}
                                 {change.status === 'RESOLVED' && change.resolvedAt && (
                                     <div className="resolution-info">
                                         <p>✅ Resolved by {change.resolvedBy} on {new Date(change.resolvedAt).toLocaleDateString()}</p>

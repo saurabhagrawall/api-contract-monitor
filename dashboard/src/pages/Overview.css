@@ -227,19 +227,6 @@
     font-family: monospace;
 }
 
-.ai-badge {
-    display: inline-block;
-}
-
-.ai-badge span {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
 /* Status badges */
 .status-badge {
     padding: 4px 12px;
@@ -389,4 +376,208 @@
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* AI Insights Section */
+.ai-insights-section {
+    margin-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 12px;
+}
+
+.ai-insights-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.ai-insights-toggle:hover {
+    opacity: 0.8;
+}
+
+.ai-badge-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.toggle-icon {
+    font-size: 12px;
+    color: #667eea;
+    font-weight: bold;
+}
+
+.ai-insights-content {
+    margin-top: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+    border-radius: 12px;
+    border: 2px solid #e0e7ff;
+}
+
+.insight-block {
+    margin-bottom: 20px;
+}
+
+.insight-block:last-child {
+    margin-bottom: 0;
+}
+
+.insight-block h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #4c1d95;
+    font-weight: 700;
+}
+
+.insight-text {
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 3px solid #667eea;
+}
+
+/* Main numbered headers (1. Deprecate...) */
+.insight-main-header {
+    font-weight: 700;
+    color: #5b21b6 !important;
+    font-size: 14px !important;
+    margin: 20px 0 12px 0 !important;
+    padding: 8px 0;
+    border-bottom: 2px solid #e0e7ff;
+}
+
+.insight-main-header:first-child {
+    margin-top: 0 !important;
+}
+
+/* Section headers (### text) */
+.insight-section-header {
+    font-weight: 700;
+    color: #7c3aed !important;
+    font-size: 13px !important;
+    margin: 16px 0 8px 0 !important;
+    padding-top: 8px;
+    border-top: 1px solid #ede9fe;
+}
+
+.insight-section-header:first-child {
+    margin-top: 0 !important;
+    border-top: none !important;
+    padding-top: 0 !important;
+}
+
+/* Sub-bullets with Action/Implementation */
+.insight-sub-bullet {
+    padding-left: 32px !important;
+    position: relative;
+    margin: 8px 0 !important;
+    line-height: 1.7 !important;
+}
+
+.insight-sub-bullet::before {
+    content: "▸";
+    position: absolute;
+    left: 16px;
+    color: #8b5cf6;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.insight-label {
+    font-weight: 600;
+    color: #6d28d9;
+}
+
+/* Regular bullets */
+.insight-bullet {
+    padding-left: 24px !important;
+    position: relative;
+    margin: 6px 0 !important;
+    line-height: 1.6 !important;
+}
+
+.insight-bullet::before {
+    content: "•";
+    position: absolute;
+    left: 12px;
+    color: #667eea;
+    font-weight: bold;
+}
+
+/* Regular text */
+.insight-regular {
+    margin: 8px 0 !important;
+    line-height: 1.7 !important;
+    color: #4b5563 !important;
+}
+
+/* Base styles for all paragraphs */
+.insight-text p {
+    font-size: 13px;
+}
+
+/* Cross-Service Impact specific styles */
+.impact-service {
+    padding: 12px;
+    margin: 10px 0 !important;
+    background: #faf5ff;
+    border-left: 4px solid #a855f7;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.impact-number {
+    font-weight: 700;
+    color: #6b21a8;
+    font-size: 14px;
+}
+
+.impact-name {
+    font-weight: 700;
+    color: #7c3aed;
+    font-size: 15px;
+}
+
+.impact-confidence {
+    display: inline-block;
+    padding: 2px 10px;
+    background: #c084fc;
+    color: white;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 4px 0;
+}
+
+.impact-description {
+    color: #4b5563;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Business Impact specific styles */
+.business-point {
+    padding: 10px;
+    margin: 8px 0 !important;
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    border-radius: 6px;
+    color: #78350f !important;
+    font-size: 13px !important;
+    line-height: 1.6 !important;
 }
