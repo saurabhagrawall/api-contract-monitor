@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,19 +37,27 @@ public class AnalysisService {
         // Fetch and save current spec
         ApiSpec currentSpec = apiSpecService.fetchAndSaveSpec(serviceName);
         
-        // Get last two specs for comparison
-        List<ApiSpec> lastTwo = apiSpecService.getLastTwoSpecs(serviceName);
-        
-        if (lastTwo.size() < 2) {
+        Optional<ApiSpec> comparisonSpecOpt = apiSpecService.getComparisonSpec(serviceName);
+
+        if (comparisonSpecOpt.isEmpty()) {
             log.info("Not enough history to analyze {}. Creating initial baseline.", serviceName);
+            // Auto-set first spec as baseline
+            apiSpecService.setBaseline(serviceName, currentSpec.getId());
             return createBaselineReport(serviceName, currentSpec);
         }
-        
-        ApiSpec newSpec = lastTwo.get(0);
-        ApiSpec oldSpec = lastTwo.get(1);
+
+        ApiSpec comparisonSpec = comparisonSpecOpt.get();
+
+        // Log which spec we're comparing against
+        if (apiSpecService.getBaselineSpec(serviceName).isPresent()) {
+            log.info("Comparing {} against BASELINE version: {}", serviceName, comparisonSpec.getVersion());
+        } else {
+            log.info("No baseline set. Comparing {} against PREVIOUS version: {}", serviceName,
+                    comparisonSpec.getVersion());
+        }
         
         // Compare specs and detect breaking changes
-        List<BreakingChange> breakingChanges = compareSpecs(oldSpec, newSpec);
+        List<BreakingChange> breakingChanges = compareSpecs(comparisonSpec, currentSpec);
 
         // Generate AI insights for each breaking change
         if (!breakingChanges.isEmpty()) {
@@ -90,12 +99,14 @@ public class AnalysisService {
         }
         
         // Create and save analysis report
-        AnalysisReport report = createAnalysisReport(serviceName, oldSpec, newSpec, breakingChanges);
+        AnalysisReport report = createAnalysisReport(serviceName, comparisonSpec, currentSpec, breakingChanges);
         analysisReportRepository.save(report);
         
-        log.info("Analysis complete for {}. Found {} breaking changes", 
-                serviceName, breakingChanges.size());
-        
+        log.info("Analysis complete for {}. Found {} breaking changes. Compared against: {}",
+                serviceName,
+                breakingChanges.size(),
+                apiSpecService.getBaselineSpec(serviceName).isPresent() ? "BASELINE" : "previous version");
+
         return report;
     }
     
